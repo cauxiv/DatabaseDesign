@@ -22,7 +22,7 @@ TID SlottedPage::insert(const Record &r) {
     // try all existing pages
     for (pageID = 0; pageID < size; pageID++) {
         // open page for read only and read the header
-        BufferFrame &rbf = bm.fixPage(segPrefix | pageID);
+        BufferFrame &rbf = bm.loadPage(segPrefix | pageID);
         data = static_cast<char *>(rbf.getData());
         header = reinterpret_cast<Header *>(data);
         size_t freeSpace = header->freeSpace;
@@ -31,7 +31,6 @@ TID SlottedPage::insert(const Record &r) {
         if (recLen + sizeof(Slot) <= freeSpace) {
             off_t headEnd = sizeof(Header) + (header->slotCount + 1) * sizeof(Slot);
             off_t dataStart = header->dataStart;
-            bm.unfixPage(rbf, false);
 
             if (dataStart <= headEnd || recLen > (dataStart - headEnd)) {
                 // must compact the page
@@ -39,11 +38,10 @@ TID SlottedPage::insert(const Record &r) {
             }
             break; // found a page with enough space
         }
-        bm.unfixPage(rbf, false);
     }
 
     // open page for writing
-    BufferFrame &bf = bm.fixPage(segPrefix | pageID);
+    BufferFrame &bf = bm.loadPage(segPrefix | pageID);
     data = static_cast<char *>(bf.getData());
 
     // new page(
@@ -100,53 +98,14 @@ TID SlottedPage::insert(const Record &r) {
     char *recPtr = data + slot->offset;
     memcpy(recPtr, r.getData(), recLen);
 
-    bm.unfixPage(bf, true);
+    bm.unloadPage(bf);
     return TID{pageID, slotID};
-}
-
-bool SlottedPage::remove(TID tid) {
-    // open page for writing
-    BufferFrame &bf = bm.fixPage((id << 48) | tid.pageID);
-    char *data = static_cast<char *>(bf.getData());
-
-    // read page
-    Header &header = reinterpret_cast<Header *>(data)[0];
-    Slot &slot = reinterpret_cast<Slot *>(data + sizeof(Header))[tid.slotID];
-
-    // update the first free slot cache
-    if (tid.slotID < header.firstFreeSlot) header.firstFreeSlot = tid.slotID;
-
-    if (slot.isIndirection()) {
-        TID itid = slot.getIndirectionTID();
-
-        // mark this slot as empty
-        slot.length = 0;
-        slot.offset = 0;
-
-        // close page and recursively remove the indirected TID
-        bm.unfixPage(bf, true);
-        return remove(itid);
-    } else {
-        if (slot.offset == header.dataStart)
-            header.dataStart += slot.length;
-
-        // update free space
-        header.freeSpace += slot.length;
-
-        // mark this slot as empty
-        slot.length = 0;
-        slot.offset = 0;
-
-        // close page and return
-        bm.unfixPage(bf, true);
-        return true;
-    }
 }
 
 
 Record SlottedPage::lookup(TID tid) {
     //open page for reading
-    BufferFrame &bf = bm.fixPage((id << 48) | tid.pageID);
+    BufferFrame &bf = bm.loadPage((id << 48) | tid.pageID);
     char *data = static_cast<char *>(bf.getData());
 
     // read page
@@ -155,20 +114,16 @@ Record SlottedPage::lookup(TID tid) {
     if (slot.isIndirection()) {
         // recursively lookup
         TID itid = slot.getIndirectionTID();
-        bm.unfixPage(bf, false);
         return lookup(itid);
     } else {
         Record r(slot.length, data + slot.offset);
-
-        // close page and return
-        bm.unfixPage(bf, false);
         return std::move(r);
     }
 }
 
 void SlottedPage::compactPage(uint32_t pageID) {
     // open page for writing
-    BufferFrame &bf = bm.fixPage((id << 48) | pageID);
+    BufferFrame &bf = bm.loadPage((id << 48) | pageID);
     char *data = static_cast<char *>(bf.getData());
     Header *header = reinterpret_cast<Header *>(data);
 
@@ -207,6 +162,5 @@ void SlottedPage::compactPage(uint32_t pageID) {
 
     header->dataStart = offset;
 
-    // close page and return
-    bm.unfixPage(bf, true);
+    bm.unloadPage(bf);
 }

@@ -12,15 +12,14 @@
 
 class BufferManager {
 public:
-    // keeps up to "size" frames in main memory
     BufferManager(size_t size);
 
     ~BufferManager();
 
 
-    BufferFrame &fixPage(uint64_t pageID);
+    BufferFrame &loadPage(uint64_t pageID);
 
-    void unfixPage(BufferFrame &frame, bool isDirty);
+    void unloadPage(BufferFrame &frame);
 
 private:
 

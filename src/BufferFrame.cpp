@@ -15,8 +15,7 @@ BufferFrame::BufferFrame(int segmentFd, u_int64_t pageID) {
     state = state_t::New;
     offset = blocksize * (pageID & 0x0000FFFFFFFFFFFF);
     fd = segmentFd;
-
-    prev = next = NULL;
+    
     currentUsers = 0;
 }
 

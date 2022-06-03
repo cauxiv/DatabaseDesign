@@ -13,7 +13,6 @@
 class SlottedPage : public Page {
 public:
     struct Header {
-        // Header of SlottedPage
         uint32_t slotCount;
         uint32_t firstFreeSlot;
         off_t dataStart;
@@ -53,8 +52,6 @@ public:
     SlottedPage(BufferManager &bm, uint64_t id) : Page(bm, id) {};
 
     TID insert(const Record &r);
-
-    bool remove(TID tid);;
 
     Record lookup(TID tid);
 

@@ -54,9 +54,6 @@ private:
     // file descriptor of the file the segment is mapped to
     int fd;
 
-    // LRU list item
-    BufferFrame *prev;
-    BufferFrame *next;
     unsigned currentUsers;
 
     friend class BufferManager;

@@ -15,7 +15,6 @@ uint64_t extractPage(const TID &tid) {
 
 const unsigned initialSize = 100; // in (slotted) pages
 const unsigned maxInserts = 1000ul * 1000ul;
-const unsigned maxUpdates = 10000;
 const vector<string> testData = {
         "640K ought to be enough for anybody",
         "Beware of bugs in the above code; I have only proved it correct, not tried it",
@@ -83,64 +82,13 @@ int main(int argc, char **argv) {
     for (auto p: values) {
         TID tid = p.first;
         const std::string &value = testData[p.second];
-        unsigned len = value.size();
-        Record rec = sp.lookup(tid);
-        assert(rec.getLen() == len);
-        assert(memcmp(rec.getData(), value.c_str(), len) == 0);
-    }
-
-    unsigned deletes = inserts / 10;
-
-    // Lookup & delete some records
-    while (deletes > 0) {
-        // Select operation
-        bool del = rnd.next() % 10 == 0;
-
-        // Select victim
-        TID tid = values.begin()->first;
-        unsigned pageId = extractPage(tid);
-        const std::string &value = testData[(values.begin()->second) % testData.size()];
-        unsigned len = value.size();
-
-        // Lookup
-        Record rec = sp.lookup(tid);
-        assert(rec.getLen() == len);
-        assert(memcmp(rec.getData(), value.c_str(), len) == 0);
-
-        if (del) { // do delete
-            assert(sp.remove(tid));
-            values.erase(tid);
-            usage[pageId] -= len;
-
-            deletes--;
-        }
-    }
-
-    // Update some values ('usage' counter invalid from here on)
-//    for (unsigned i = 0; i < maxUpdates; ++i) {
-//        // TODO random select
-//        // Select victim
-//        TID tid = values.begin()->first;
-//
-//        // Select new string/record
-//        uint64_t r = rnd.next() % testData.size();
-//        const string s = testData[r];
-//
-//        // Replace old with new value
-//        sp.update(tid, Record(s.size(), s.c_str()));
-//        values[tid] = r;
-//    }
-
-    // Lookups
-    for (auto p: values) {
-        TID tid = p.first;
-        const std::string &value = testData[p.second];
         cout << value << "\n";
         unsigned len = value.size();
         Record rec = sp.lookup(tid);
         assert(rec.getLen() == len);
         assert(memcmp(rec.getData(), value.c_str(), len) == 0);
     }
+
 
     cout << "TEST SUCCESSFUL!" << endl;
     return EXIT_SUCCESS;

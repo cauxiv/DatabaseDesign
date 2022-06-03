@@ -26,7 +26,7 @@ BufferManager::~BufferManager() {
 
 }
 
-BufferFrame &BufferManager::fixPage(uint64_t pageID) {
+BufferFrame &BufferManager::loadPage(uint64_t pageID) {
 
     BufferFrame *bf;
 
@@ -89,6 +89,6 @@ int BufferManager::getSegmentFd(unsigned int segmentID) {
     }
 }
 
-void BufferManager::unfixPage(BufferFrame &frame, bool isDirty) {
-    if (isDirty) frame.markDirty();
+void BufferManager::unloadPage(BufferFrame &frame) {
+    frame.flush();
 }

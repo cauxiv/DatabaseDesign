@@ -1,0 +1,3 @@
+/Users/woodi/Programs/school/ModernDataBase/cmake-build-debug/CMakeFiles/ModernDataBase.dir
+/Users/woodi/Programs/school/ModernDataBase/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/woodi/Programs/school/ModernDataBase/cmake-build-debug/CMakeFiles/rebuild_cache.dir
